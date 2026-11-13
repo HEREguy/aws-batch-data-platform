@@ -1,0 +1,93 @@
+# Pipeline Configuration
+# Validated at DAG startup - defines the single ELT pipeline
+
+pipeline:
+  name: "sample_elt_pipeline"
+  description: "Extract from public API, load to S3/Glue, transform with dbt/Athena"
+  schedule: "@daily"
+  start_date: "2024-01-01"
+  catchup: false
+  max_active_runs: 1
+  tags: ["elt", "portfolio", "aws"]
+
+source:
+  type: "http"
+  connection_id: "source_api"
+  endpoint: "{{ var.value.source_api_endpoint }}"
+  method: "GET"
+  params: {}
+  headers: {}
+  pagination:
+    type: "offset"  # or "cursor", "page_token"
+    limit_param: "limit"
+    offset_param: "offset"
+    default_limit: 100
+    max_pages: 10
+
+  # Schema for the raw data (used for validation and Parquet conversion)
+  schema:
+    - name: "id"
+      type: "string"
+      nullable: false
+    - name: "timestamp"
+      type: "timestamp"
+      nullable: false
+    - name: "value"
+      type: "double"
+      nullable: true
+    - name: "category"
+      type: "string"
+      nullable: true
+
+destination:
+  s3:
+    raw_bucket: "{{ var.value.s3_raw_bucket }}"
+    curated_bucket: "{{ var.value.s3_curated_bucket }}"
+    raw_prefix: "raw/{{ pipeline.name }}/{{ ds }}/"
+    curated_prefix: "curated/{{ pipeline.name }}/"
+    file_format: "parquet"
+    compression: "snappy"
+    partition_by: ["year", "month", "day"]
+  
+  glue:
+    database: "{{ var.value.glue_database_staging }}"
+    table_name: "{{ pipeline.name }}"
+    create_database_if_not_exists: true
+  
+  athena:
+    workgroup: "{{ var.value.athena_workgroup_staging }}"
+    output_location: "s3://{{ var.value.s3_athena_results_bucket }}/{{ pipeline.name }}/"
+    encryption: "SSE_S3"
+
+transform:
+  type: "dbt"  # or "sql"
+  project_dir: "{{ var.value.dbt_project_dir }}"
+  profiles_dir: "{{ var.value.dbt_profiles_dir }}"
+  target: "{{ var.value.dbt_target }}"
+  models_tag: "pipeline:{{ pipeline.name }}"
+  test_tag: "pipeline:{{ pipeline.name }}"
+
+data_quality:
+  enabled: true
+  checks:
+    - name: "row_count"
+      type: "sql"
+      sql: "SELECT COUNT(*) as cnt FROM {{ glue.database }}.{{ glue.table_name }} WHERE year={{ execution_date.year }} AND month={{ execution_date.month }} AND day={{ execution_date.day }}"
+      min_value: "{{ var.value.dq_min_row_count }}"
+    - name: "null_check"
+      type: "dbt_test"
+      test_type: "not_null"
+      columns: ["id", "timestamp"]
+    - name: "uniqueness_check"
+      type: "dbt_test"
+      test_type: "unique"
+      columns: ["id"]
+    - name: "freshness_check"
+      type: "sql"
+      sql: "SELECT MAX(timestamp) as max_ts FROM {{ glue.database }}.{{ glue.table_name }}"
+      max_age_hours: 48
+
+alerting:
+  on_failure: true
+  on_success: false
+  slack_webhook: "{{ var.value.slack_webhook_url }}"

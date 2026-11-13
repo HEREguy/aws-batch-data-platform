@@ -1,0 +1,42 @@
+# Airflow Variables Configuration
+# These are loaded into Airflow as Variables (key-value pairs)
+# Accessible in DAGs via: Variable.get("key") or {{ var.value.key }}
+
+variables:
+  # AWS Configuration
+  aws_default_region: "us-east-1"
+  aws_profile: "default"
+
+  # S3 Buckets (created by Terraform)
+  s3_raw_bucket: "aws-batch-data-platform-staging-raw"
+  s3_curated_bucket: "aws-batch-data-platform-staging-curated"
+  s3_athena_results_bucket: "aws-batch-data-platform-staging-athena-results"
+
+  # Glue Databases
+  glue_database_staging: "elt_staging"
+  glue_database_production: "elt_production"
+
+  # Athena Workgroups
+  athena_workgroup_staging: "elt-staging"
+  athena_workgroup_production: "elt-production"
+
+  # Source API
+  source_api_base_url: "https://api.example.com"
+  source_api_endpoint: "/data"
+  # source_api_key: ""  # Set via Airflow UI or .env if needed
+
+  # Pipeline Settings
+  pipeline_schedule: "@daily"
+  pipeline_start_date: "2024-01-01"
+  pipeline_catchup: "false"
+  pipeline_max_active_runs: "1"
+
+  # Data Quality Thresholds
+  dq_min_row_count: "1"
+  dq_max_null_pct: "0.05"
+  dq_max_duplicate_pct: "0.01"
+
+  # dbt Settings
+  dbt_target: "staging"
+  dbt_profiles_dir: "/opt/airflow/dbt"
+  dbt_project_dir: "/opt/airflow/dbt"

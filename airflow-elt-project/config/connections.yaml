@@ -1,0 +1,42 @@
+# Airflow Connections Configuration
+# This file is mounted into the Airflow container and loaded by init_connections.py
+# Connection IDs are referenced in DAGs and operators
+
+connections:
+  # AWS connection for S3, Glue, Athena operators
+  - conn_id: aws_default
+    conn_type: aws
+    description: "Default AWS connection using local profile"
+    extra:
+      region_name: "{{ var.value.aws_default_region }}"
+      # For local dev: uses AWS_PROFILE from environment
+      # For production: uses IAM role attached to Airflow worker
+
+  # HTTP connection for source API
+  - conn_id: source_api
+    conn_type: http
+    description: "Connection to the public source API"
+    host: "{{ var.value.source_api_base_url }}"
+    extra:
+      timeout: 30
+      # Add headers if API requires authentication
+      # headers: '{"Authorization": "Bearer {{ var.value.source_api_key }}"}'
+
+  # PostgreSQL connection for Airflow metadata (already configured via env vars)
+  # This is for reference - actual connection is set via AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
+  - conn_id: postgres_default
+    conn_type: postgres
+    description: "Airflow metadata database"
+    host: postgres
+    port: 5432
+    login: airflow
+    password: airflow
+    schema: airflow
+
+  # Athena connection for dbt and SQL execution
+  - conn_id: athena_default
+    conn_type: aws
+    description: "Athena connection for query execution"
+    extra:
+      region_name: "{{ var.value.aws_default_region }}"
+      # Workgroup is set per-query or via dbt profile
