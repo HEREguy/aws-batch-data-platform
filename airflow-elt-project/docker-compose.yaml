@@ -1,0 +1,112 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: airflow-postgres
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - airflow-network
+
+  airflow-webserver:
+    image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.9.1-python3.11}
+    container_name: airflow-webserver
+    entrypoint: /bin/bash
+    command: -c "airflow db migrate && airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com && airflow webserver"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT: '60'
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_WEBSERVER_SECRET_KEY:-changeme}
+      AIRFLOW__LOGGING__LOGGING_LEVEL: INFO
+      AIRFLOW__LOGGING__COLOR_LOG: 'false'
+      _AIRFLOW_WWW_USER_CREATE: 'true'
+      _AIRFLOW_WWW_USER_USERNAME: admin
+      _AIRFLOW_WWW_USER_PASSWORD: admin
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./config/airflow.cfg:/opt/airflow/airflow.cfg
+      - ./scripts:/opt/airflow/scripts
+      - ./config/connections.yaml:/opt/airflow/config/connections.yaml
+      - ./config/variables.yaml:/opt/airflow/config/variables.yaml
+      - airflow-logs-volume:/opt/airflow/logs
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - airflow-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  airflow-scheduler:
+    image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.9.1-python3.11}
+    container_name: airflow-scheduler
+    entrypoint: /bin/bash
+    command: -c "airflow db migrate && airflow scheduler"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT: '60'
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_WEBSERVER_SECRET_KEY:-changeme}
+      AIRFLOW__LOGGING__LOGGING_LEVEL: INFO
+      AIRFLOW__LOGGING__COLOR_LOG: 'false'
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./config/airflow.cfg:/opt/airflow/airflow.cfg
+      - ./scripts:/opt/airflow/scripts
+      - ./config/connections.yaml:/opt/airflow/config/connections.yaml
+      - ./config/variables.yaml:/opt/airflow/config/variables.yaml
+      - airflow-logs-volume:/opt/airflow/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - airflow-network
+
+  airflow-init:
+    image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.9.1-python3.11}
+    container_name: airflow-init
+    entrypoint: /bin/bash
+    command: -c "airflow db migrate"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT: '60'
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_WEBSERVER_SECRET_KEY:-changeme}
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./config/airflow.cfg:/opt/airflow/airflow.cfg
+      - ./scripts:/opt/airflow/scripts
+      - ./config/connections.yaml:/opt/airflow/config/connections.yaml
+      - ./config/variables.yaml:/opt/airflow/config/variables.yaml
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - airflow-network
+
+volumes:
+  postgres-db-volume:
+  airflow-logs-volume:
+
+networks:
+  airflow-network:
+    driver: bridge
