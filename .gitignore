@@ -51,3 +51,4 @@ logs/
 *.temp
 tmp/
 airflow-elt-project/.env.example
+.aider*
