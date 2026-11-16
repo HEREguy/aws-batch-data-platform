@@ -1,0 +1,26 @@
+#!/bin/bash
+##############################################################################################################
+# TL;DR - every time you clone this repo, you should run this git command just once
+# git config core.hooksPath ./git-hooks
+##############################################################################################################
+
+##############################################################################################################
+## Git Hooks are a mechanism to trigger a custom action whenever certain git events occur
+# https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks
+#
+## Git Hooks are stored, by default, in the ./git/hooks/ directory which is _not managed by Git_.
+#
+## In order to share Git Hooks with the team, we have to put them somewhere else. Thus we have ./git-hooks/
+#
+## However, we must now tell Git that we want to use ./git-hooks/ instead of ./git/hooks/ so ...
+#
+## **Every time you clone this repo, you should run this git command just once**
+#
+# git config core.hooksPath ./git-hooks
+#
+# Run it just once every time you clone the repo.
+##############################################################################################################
+
+## Running this as a pre-push Git Hook will prevent developers from pushing invalid or improperly formatted code!
+## Once you fix the changes identified by these, you can _amend_ your git commit, then attempt push again.
+pdm run pytest && terraform -chdir=deployment/ fmt -check -recursive && terraform -chdir=deployment/ validate && echo "Pre-push checks passed successfully."
