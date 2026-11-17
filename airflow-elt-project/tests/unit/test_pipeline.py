@@ -1,8 +1,8 @@
 """Unit tests for the ELT pipeline."""
 
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime, timedelta
 
 
 class TestPipelineConfig:
@@ -66,27 +66,27 @@ class TestExtractLogic:
 
         # Simulate the pagination loop logic from the DAG
         from airflow.providers.http.hooks.http import HttpHook
-        
+
         hook = HttpHook(method="GET", http_conn_id="test")
         all_records = []
         page = 0
         max_pages = 3
         default_limit = 100
-        
+
         while page < max_pages:
             params = {"limit": default_limit, "offset": page * default_limit}
             response = hook.run(endpoint="/test", data=params)
             records = response.json().get("data", [])
-            
+
             if not records:
                 break
-            
+
             all_records.extend(records)
             page += 1
-            
+
             if len(records) < default_limit:
                 break
-        
+
         # Verify the mock was called correctly
         assert mock_hook_instance.run.call_count == 3
         assert len(all_records) == 3

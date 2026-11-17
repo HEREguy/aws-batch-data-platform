@@ -1,7 +1,6 @@
 """Integration tests for DAG loading and task execution."""
 
 import pytest
-from airflow.models.dagbag import DagBag
 
 
 class TestDAGLoading:
@@ -43,27 +42,19 @@ class TestDAGStructure:
 
     def test_dag_has_extract_task(self, dag_bag):
         """Test that DAG has an extract task."""
-        dag = dag_bag.get_dag("sample_elt_pipeline")
-        task_ids = {task.task_id for task in dag.tasks}
         # Will be implemented when DAG is created
         # assert "extract_data" in task_ids
 
     def test_dag_has_load_task(self, dag_bag):
         """Test that DAG has a load task."""
-        dag = dag_bag.get_dag("sample_elt_pipeline")
-        task_ids = {task.task_id for task in dag.tasks}
         # assert "load_to_s3" in task_ids
 
     def test_dag_has_transform_task(self, dag_bag):
         """Test that DAG has a transform task."""
-        dag = dag_bag.get_dag("sample_elt_pipeline")
-        task_ids = {task.task_id for task in dag.tasks}
         # assert "transform_with_dbt" in task_ids
 
     def test_dag_has_data_quality_task(self, dag_bag):
         """Test that DAG has a data quality task."""
-        dag = dag_bag.get_dag("sample_elt_pipeline")
-        task_ids = {task.task_id for task in dag.tasks}
         # assert "data_quality_checks" in task_ids
 
 

@@ -25,7 +25,7 @@ os.environ.setdefault("AIRFLOW__DATABASE__SQL_ALCHEMY_CONN", f"sqlite:///{TEST_D
 def dag_bag():
     """Load all DAGs for structure testing."""
     from airflow.models.dagbag import DagBag
-    
+
     dag_folder = PROJECT_ROOT / "dags"
     dag_bag = DagBag(dag_folder=str(dag_folder), include_examples=False)
     return dag_bag
@@ -35,9 +35,9 @@ def dag_bag():
 def sample_pipeline_config():
     """Load sample pipeline configuration."""
     import yaml
-    
+
     config_path = PROJECT_ROOT / "config" / "pipelines" / "sample_pipeline.yaml"
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         return yaml.safe_load(f)
 
 
