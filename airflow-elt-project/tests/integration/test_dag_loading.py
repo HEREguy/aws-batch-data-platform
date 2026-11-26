@@ -1,6 +1,13 @@
 """Integration tests for DAG loading and task execution."""
 
+import sys
+
 import pytest
+
+pytestmark = pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="Airflow does not support Windows natively; integration tests run on Linux/CI",
+)
 
 
 class TestDAGLoading:

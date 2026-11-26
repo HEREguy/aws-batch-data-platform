@@ -71,7 +71,7 @@ class TestExtractLogic:
         all_records = []
         page = 0
         max_pages = 3
-        default_limit = 100
+        default_limit = 1
 
         while page < max_pages:
             params = {"limit": default_limit, "offset": page * default_limit}

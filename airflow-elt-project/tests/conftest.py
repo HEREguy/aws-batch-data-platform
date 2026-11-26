@@ -3,9 +3,15 @@
 import os
 import sys
 import tempfile
+import types
 from pathlib import Path
 
 import pytest
+
+# fcntl is Unix-only; Airflow imports it via airflow.operators.python.
+# On Windows, provide a stub so DAG loading can proceed in tests.
+if os.name == "nt" and "fcntl" not in sys.modules:
+    sys.modules["fcntl"] = types.ModuleType("fcntl")
 
 # Add project root to path for imports
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -18,7 +24,10 @@ TEST_DB_PATH = Path(tempfile.gettempdir()) / "airflow_test.db"
 os.environ.setdefault("AIRFLOW_HOME", str(PROJECT_ROOT / "airflow_test_home"))
 os.environ.setdefault("AIRFLOW__CORE__UNIT_TEST_MODE", "True")
 os.environ.setdefault("AIRFLOW__CORE__LOAD_EXAMPLES", "False")
-os.environ.setdefault("AIRFLOW__DATABASE__SQL_ALCHEMY_CONN", f"sqlite:///{TEST_DB_PATH}")
+# Use as_posix() so SQLite URI uses forward slashes.
+# Airflow requires 4 slashes for absolute paths (even on Windows).
+_db_path = TEST_DB_PATH.as_posix()
+os.environ.setdefault("AIRFLOW__DATABASE__SQL_ALCHEMY_CONN", f"sqlite:////{_db_path}")
 
 
 @pytest.fixture(scope="session")
