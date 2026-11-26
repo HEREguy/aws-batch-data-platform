@@ -11,7 +11,8 @@ import sys
 
 import yaml
 from airflow.models.connection import Connection
-from airflow.settings import Session
+from airflow.settings import Session as AirflowSession
+from sqlalchemy.orm import Session as DBSession  # type: ignore[import-untyped]
 
 
 def load_connections_config(config_path: str) -> dict:
@@ -21,7 +22,7 @@ def load_connections_config(config_path: str) -> dict:
     return config.get("connections", [])
 
 
-def create_or_update_connection(session: Session, conn_config: dict) -> Connection:
+def create_or_update_connection(session: DBSession, conn_config: dict) -> Connection:
     """Create or update an Airflow connection."""
     conn_id = conn_config["conn_id"]
 
@@ -63,7 +64,7 @@ def main():
 
     connections = load_connections_config(config_path)
 
-    session = Session()
+    session = AirflowSession()
     try:
         for conn_config in connections:
             create_or_update_connection(session, conn_config)

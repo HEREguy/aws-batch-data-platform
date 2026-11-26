@@ -6,7 +6,7 @@ Extracts data from a public API, loads to S3/Glue, transforms with dbt/Athena.
 from datetime import datetime, timedelta
 from io import BytesIO
 
-import pandas as pd
+import pandas as pd  # type: ignore[import-untyped]
 import yaml
 from airflow import DAG
 from airflow.decorators import task
