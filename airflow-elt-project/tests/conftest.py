@@ -1,6 +1,7 @@
 """Pytest configuration and fixtures for Airflow tests."""
 
 import os
+import subprocess
 import sys
 import tempfile
 import types
@@ -30,8 +31,28 @@ _db_path = TEST_DB_PATH.as_posix()
 os.environ.setdefault("AIRFLOW__DATABASE__SQL_ALCHEMY_CONN", f"sqlite:////{_db_path}")
 
 
+
 @pytest.fixture(scope="session")
-def dag_bag():
+def airflow_db():
+    """Initialize the Airflow metadata database before DAG loading tests.
+
+    Creates the required schema (e.g. the "dag" table) so that
+    DagBag.get_dag() can query it on macOS, Linux, and Windows.
+    """
+    db_uri = f"sqlite:////{_db_path}"
+    env = {**os.environ, "AIRFLOW__DATABASE__SQL_ALCHEMY_CONN": db_uri}
+    result = subprocess.run(
+        ["airflow", "db", "init"],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    if result.returncode != 0:
+        pytest.exit(f"airflow db init failed:\n{result.stderr}")
+    yield
+
+@pytest.fixture(scope="session")
+def dag_bag(airflow_db):
     """Load all DAGs for structure testing."""
     from airflow.models.dagbag import DagBag
 
