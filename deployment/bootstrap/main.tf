@@ -10,8 +10,8 @@ terraform {
 }
 
 provider "aws" {
-  region = var.aws_region
-  profile = "aws-batch-data-platform"
+  region  = var.aws_region
+  profile = var.aws_profile
 }
 
 # S3 bucket to hold Terraform state files

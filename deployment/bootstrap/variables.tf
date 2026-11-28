@@ -38,3 +38,8 @@ variable "state_lock_table_name" {
   type        = string
   default     = "terraform-state-lock"
 }
+variable "aws_profile" {
+  description = "Named AWS CLI profile used by the bootstrap provider"
+  type        = string
+  default     = "aws-batch-data-platform"
+}

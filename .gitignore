@@ -38,10 +38,7 @@ logs/
 # Terraform
 *.tfstate
 *.tfstate.*
-*.tfvars
-*.tfvars.json
 .terraform/
-.terraform.lock.hcl
 
 # Docker
 .docker/
