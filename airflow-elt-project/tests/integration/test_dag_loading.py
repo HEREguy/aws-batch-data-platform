@@ -1,6 +1,5 @@
 """Integration tests for DAG loading and task execution."""
 
-import sys
 
 import pytest
 

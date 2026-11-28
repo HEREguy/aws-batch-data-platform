@@ -4,8 +4,32 @@ set -e
 # After cloning this repo, run once:
 # git config core.hooksPath ./git-hooks
 
-uv run pytest -c airflow-elt-project/pyproject.toml airflow-elt-project/tests
-uv run ruff check airflow-elt-project/
-uv run mypy airflow-elt-project/
-cd deployment && terraform fmt -check -recursive && terraform validate
+PROJECT=airflow-elt-project
+OS="$(uname -s)"
+
+# Airflow is not supported natively on Windows (use WSL2 or Docker there), and the
+# Airflow test DB setup is unreliable on macOS, so the Airflow tests only run on Linux.
+# Lint, type checks, and Terraform checks run everywhere.
+case "$OS" in
+  Darwin|MINGW*|MSYS*|CYGWIN*)
+    RUN_AIRFLOW_TESTS=0
+    ;;
+  *)
+    RUN_AIRFLOW_TESTS=1
+    ;;
+esac
+
+uv run --project "$PROJECT" ruff check "$PROJECT/"
+uv run --project "$PROJECT" mypy "$PROJECT/"
+
+if [ "$RUN_AIRFLOW_TESTS" -eq 1 ]; then
+  uv run --project "$PROJECT" pytest -c "$PROJECT/pyproject.toml" "$PROJECT/tests"
+else
+  echo "Skipping Airflow tests on $OS (run them on Linux, WSL2, or in Docker)."
+fi
+
+terraform -chdir=deployment fmt -check -recursive
+terraform -chdir=deployment/bootstrap init -backend=false -input=false -no-color > /dev/null
+terraform -chdir=deployment/bootstrap validate
+
 echo "Pre-push checks passed successfully."
